@@ -30,20 +30,24 @@ import static org.organicdesign.fp.indent.IndentUtils.arrayString;
 import static org.organicdesign.fp.indent.IndentUtils.indentSpace;
 
 /**
- <p>An RRB Tree is an immutable List (like Clojure's PersistentVector) that also supports random inserts, deletes,
- and can be split and joined back together in logarithmic time.
- This is based on the paper, "RRB-Trees: Efficient Immutable Vectors" by Phil Bagwell and
+ <p>An RRB Tree is an immutable List (like Clojure's PersistentVector)
+ that also supports random inserts, deletes, and can be split and
+ joined back together in logarithmic time.  This is based on the
+ paper, "RRB-Trees: Efficient Immutable Vectors" by Phil Bagwell and
  Tiark Rompf, with the following differences:</p>
 
  <ul>
- <li>The Relaxed nodes can be sized between n/3 and 2n/3 (Bagwell/Rompf specify n and n-1)</li>
- <li>The Join operation sticks the shorter tree unaltered into the larger tree (except for very
- small trees which just get concatenated).</li>
+ <li>The Relaxed nodes can be sized between n/3 and 2n/3
+     (Bagwell/Rompf specify n and n-1)</li>
+ <li>The Join operation sticks the shorter tree unaltered into the
+     larger tree (except for very small trees which just get
+     concatenated).</li>
  </ul>
 
- <p>Details were filled in from the Cormen, Leiserson, Rivest & Stein Algorithms book entry
- on B-Trees.  Also with an awareness of the Clojure PersistentVector by Rich Hickey.  All errors
- are by Glen Peterson.</p>
+ <p>Details were filled in from the Cormen, Leiserson, Rivest & Stein
+ Algorithms book chapter on B-Trees.  Also with an awareness of the
+ Clojure PersistentVector by Rich Hickey.  All errors are by Glen
+ Peterson.</p>
 
  <h4>History (what little I know):</h4>
  1972: B-Tree: Rudolf Bayer and Ed McCreight<br>
@@ -54,14 +58,23 @@ import static org.organicdesign.fp.indent.IndentUtils.indentSpace;
  <p>Compared to other collections (timings summary from 2017-06-11):</p>
 
  <ul>
- <li>append() - {@link ImRrbt} varies between 90% and 100% of the speed of {@link PersistentVector} (biggest difference above 100K).
- {@link MutableRrbt} varies between 45% and 80% of the speed of
- {@link org.organicdesign.fp.collections.PersistentVector.MutableVector} (biggest difference from 100 to 1M).</li>
- <li>get() - varies between 50% and 150% of the speed of PersistentVector (PV wins above 1K) if you build RRB using append().
- If you build rrb using random inserts (worst case), it goes from 90% at 10 items down to 15% of the speed of the PV at 1M items.</li>
+
+ <li>append() - {@link ImRrbt} varies between 90% and 100% of the
+     speed of {@link PersistentVector} (biggest difference above
+     100K).  {@link MutableRrbt} varies between 45% and 80% of the
+     speed of {@link
+     org.organicdesign.fp.collections.PersistentVector.MutableVector}
+     (biggest difference from 100 to 1M).</li>
+ <li>get() - varies between 50% and 150% of the speed of
+     PersistentVector (PV wins above 1K) if you build RRB using
+     append().  If you build rrb using random inserts (worst case), it
+     goes from 90% at 10 items down to 15% of the speed of the PV at
+     1M items.</li>
  <li>iterate() - is about the same speed as PersistentVector</li>
- <li>insert(0, item) - beats ArrayList above 1K items (worse than ArrayList below 100 items).</li>
- <li>insert(random, item) - beats ArrayList above 10K items (worse than ArrayList until then).</li>
+ <li>insert(0, item) - beats ArrayList above 1K items (worse than
+     ArrayList below 100 items).</li>
+ <li>insert(random, item) - beats ArrayList above 10K items (worse
+     than ArrayList until then).</li>
  <li>O(log n) split(), join(), and remove() (not timed yet).</li>
  </ul>
 
@@ -71,12 +84,15 @@ import static org.organicdesign.fp.indent.IndentUtils.indentSpace;
 @SuppressWarnings("WeakerAccess")
 public abstract class RrbTree<E> implements BaseList<E>, Indented {
 
-    // Focus is like the tail in Rich Hickey's Persistent Vector, but named after the structure
-    // in Scala's implementation.  Tail and focus are both designed to allow repeated appends or
-    // inserts to the same area of a vector to be done in constant time.  Tail only handles appends
-    // but this can handle repeated inserts to any area of a vector.
+    // Focus is like the tail in Rich Hickey's Persistent Vector, but
+    // named after the structure in Scala's implementation.  Tail and
+    // focus are both designed to allow repeated appends or inserts to
+    // the same area of a vector to be done in constant time.  Tail
+    // only handles appends but this can handle repeated inserts to
+    // any area of a vector.
 
-    /** Mutable version of an {@link RrbTree}.  Timing information is available there. */
+    /** Mutable version of an {@link RrbTree}.  Timing information is
+     * available there. */
     public static class MutableRrbt<E> extends RrbTree<E> implements MutableList<E> {
         private E[] focus;
         private int focusStartIndex;
@@ -91,8 +107,9 @@ public abstract class RrbTree<E> implements BaseList<E>, Indented {
         /** {@inheritDoc} */
         @SuppressWarnings("unchecked")
         @Override public MutableRrbt<E> append(E val) {
-            // If our focus isn't set up for appends or if it's full, insert it into the data structure
-            // where it belongs.  Then make a new focus
+            // If our focus isn't set up for appends or if it's full,
+            // insert it into the data structure where it belongs.
+            // Then make a new focus
             if ( (focusLength >= STRICT_NODE_LENGTH) ||
                  ((focusLength > 0) &&
                   (focusStartIndex < (size - focusLength))) ) {
@@ -105,7 +122,8 @@ public abstract class RrbTree<E> implements BaseList<E>, Indented {
                 return this;
             }
 
-            // TODO: 3. Make the root the first argument to RrbTree, MutableRrbt and ImRrbt.
+            // TODO: 3. Make the root the first argument to RrbTree,
+            // MutableRrbt and ImRrbt.
 
             if (focus.length <= focusLength) {
                 focus = arrayCopy(focus, STRICT_NODE_LENGTH, null);
@@ -150,7 +168,8 @@ public abstract class RrbTree<E> implements BaseList<E>, Indented {
                 throw new IndexOutOfBoundsException("Index: " + i + " size: " + size);
             }
 
-            // This is a debugging assertion - can't be covered by a test.
+            // This is a debugging assertion - can't be covered by a
+            // test.
 //        if ( (focusStartIndex < 0) || (focusStartIndex > size) ) {
 //            throw new IllegalStateException("focusStartIndex: " + focusStartIndex +
 //                                            " size: " + size);
@@ -185,7 +204,8 @@ public abstract class RrbTree<E> implements BaseList<E>, Indented {
 
         /** {@inheritDoc} */
         @Override public MutableRrbt<E> insert(int idx, E element)  {
-            // If the focus is full, push it into the tree and make a new one with the new element.
+            // If the focus is full, push it into the tree and make a
+            // new one with the new element.
             if (focusLength >= STRICT_NODE_LENGTH) {
                 root = root.pushFocus(focusStartIndex,
                                                   arrayCopy(focus, focusLength, null));
@@ -210,10 +230,11 @@ public abstract class RrbTree<E> implements BaseList<E>, Indented {
             int diff = idx - focusStartIndex;
 
             if ( (diff >= 0) && (diff <= focusLength) ) {
-                // Here focus length cannot be zero!
-                // We want to double the length each time up to STRICT_NODE_LENGTH
-                // because there is no guarantee that the next insert will be in the same
-                // place, so this hedges our bets.
+                // Here focus length cannot be zero!  We want to
+                // double the length each time up to
+                // STRICT_NODE_LENGTH because there is no guarantee
+                // that the next insert will be in the same place, so
+                // this hedges our bets.
                 if (focus.length <= focusLength) {
                     int newLen = (focusLength >= HALF_STRICT_NODE_LENGTH)
                                  ? STRICT_NODE_LENGTH
@@ -233,9 +254,10 @@ public abstract class RrbTree<E> implements BaseList<E>, Indented {
                 return this;
             }
 
-            // Here we are left with an insert somewhere else than the current focus.
-            // Here the mutable version has a focus that's longer than the number of items used,
-            // So we need to shorten it before pushing it into the tree.
+            // Here we are left with an insert somewhere else than the
+            // current focus.  Here the mutable version has a focus
+            // that's longer than the number of items used, So we need
+            // to shorten it before pushing it into the tree.
             if (focusLength > 0) {
                 root = root.pushFocus(focusStartIndex, arrayCopy(focus, focusLength, null));
             }
@@ -265,16 +287,18 @@ public abstract class RrbTree<E> implements BaseList<E>, Indented {
         }
 
         /**
-         Joins the given tree to the right side of this tree (or this to the left side of that one) in
-         something like O(log n) time.
+         Joins the given tree to the right side of this tree (or this
+         to the left side of that one) in something like O(log n)
+         time.
          */
         @SuppressWarnings("unchecked")
         public RrbTree<E> join(RrbTree<E> that) {
 
-            // We don't want to wonder below if we're inserting leaves or branch-nodes.
-            // Also, it leaves the tree cleaner to just smash leaves onto the bigger tree.
-            // Ultimately, we might want to see if we can grab the tail and stick it where it belongs
-            // but for now, this should be alright.
+            // We don't want to wonder below if we're inserting leaves
+            // or branch-nodes.  Also, it leaves the tree cleaner to
+            // just smash leaves onto the bigger tree.  Ultimately, we
+            // might want to see if we can grab the tail and stick it
+            // where it belongs but for now, this should be alright.
             if (that.size() < MAX_NODE_LENGTH) {
                 return concat(that);
             }
@@ -285,12 +309,15 @@ public abstract class RrbTree<E> implements BaseList<E>, Indented {
                 return that;
             }
 
-            // OK, here we've eliminated the case of merging a leaf into a tree.  We only have to
-            // deal with tree-into-tree merges below.
+            // OK, here we've eliminated the case of merging a leaf
+            // into a tree.  We only have to deal with tree-into-tree
+            // merges below.
             //
-            // Note that if the right-hand tree is bigger, we'll effectively add this tree to the
-            // left-hand side of that one.  It's logically the same as adding that tree to the right
-            // of this, but the mechanism by which it happens is a little different.
+            // Note that if the right-hand tree is bigger, we'll
+            // effectively add this tree to the left-hand side of that
+            // one.  It's logically the same as adding that tree to
+            // the right of this, but the mechanism by which it
+            // happens is a little different.
             Node<E> leftRoot = pushFocus();
             Node<E> rightRoot = that.pushFocus();
 
@@ -302,28 +329,34 @@ public abstract class RrbTree<E> implements BaseList<E>, Indented {
 //            throw new IllegalStateException("Right had unnecessary ancestors!");
 //        }
 
-            // Whether to add the right tree to the left one (true) or vice-versa (false).
-            // True also means left is taller, false: right is taller.
+            // Whether to add the right tree to the left one (true) or
+            // vice-versa (false).  True also means left is taller,
+            // false: right is taller.
             boolean leftIntoRight = leftRoot.height() < rightRoot.height();
             Node<E> taller = leftIntoRight ? rightRoot : leftRoot;
             Node<E> shorter = leftIntoRight ? leftRoot : rightRoot;
 
-            // Most compact: Descend the taller tree to shorter.height and find room for all
-            //     shorter children as children of that node.
+            // Most compact: Descend the taller tree to shorter.height
+            //     and find room for all shorter children as children
+            //     of that node.
             //
-            // Next: add the shorter node, unchanged, as a child to the taller tree at
-            //       shorter.height + 1
+            // Next: add the shorter node, unchanged, as a child to
+            //       the taller tree at shorter.height + 1
             //
-            // If that level of the taller tree is full, add an ancestor to the shorter node and try to
-            // fit at the next level up in the taller tree.
+            // If that level of the taller tree is full, add an
+            // ancestor to the shorter node and try to fit at the next
+            // level up in the taller tree.
             //
-            // If this brings us to the top of the taller tree (both trees are the same height), add a
-            // new parent node with leftRoot and rightRoot as children
+            // If this brings us to the top of the taller tree (both
+            // trees are the same height), add a new parent node with
+            // leftRoot and rightRoot as children
 
-            // Walk down the taller tree to one below the shorter, remembering ancestors.
+            // Walk down the taller tree to one below the shorter,
+            // remembering ancestors.
             Node<E> n = taller;
 
-            // This is the maximum we can descend into the taller tree (before running out of tree)
+            // This is the maximum we can descend into the taller tree
+            // (before running out of tree)
 //        int maxDescent = taller.height() - 1;
 
             // Actual amount we're going to descend.
@@ -341,16 +374,17 @@ public abstract class RrbTree<E> implements BaseList<E>, Indented {
 //            }
                 n = n.endChild(leftIntoRight);
             }
-            // i is incremented before leaving the loop, so decrement it here to make it point
-            // to ancestors.length - 1;
+            // i is incremented before leaving the loop, so decrement
+            // it here to make it point to ancestors.length - 1;
             i--;
 
 //        if (n.height() != shorter.height()) {
 //            throw new IllegalStateException("Didn't get to proper height");
 //        }
 
-            // Most compact: Descend the taller tree to shorter.height and find room for all
-            //     shorter children as children of that node.
+            // Most compact: Descend the taller tree to shorter.height
+            //     and find room for all shorter children as children
+            //     of that node.
             if (n.thisNodeHasRelaxedCapacity(shorter.numChildren())) {
                 // Adding kids of shorter to proper level of taller...
                 Node<E>[] kids;
@@ -375,8 +409,8 @@ public abstract class RrbTree<E> implements BaseList<E>, Indented {
             }
 
             // TODO: Is this used?
-            // While nodes in the taller are full, add a parent to the shorter and try the next level
-            // up.
+            // While nodes in the taller are full, add a parent to the
+            // shorter and try the next level up.
             while (!n.thisNodeHasRelaxedCapacity(1) &&
                    (i >= 0) ) {
 
@@ -387,8 +421,9 @@ public abstract class RrbTree<E> implements BaseList<E>, Indented {
                 shorter = addAncestor(shorter);
 //            shorter.debugValidate();
 
-                // Sometimes we care about which is shorter and sometimes about left and right.
-                // Since we fixed the shorter tree, we have to update the left/right
+                // Sometimes we care about which is shorter and
+                // sometimes about left and right.  Since we fixed the
+                // shorter tree, we have to update the left/right
                 // pointer to point to the new shorter.
                 if (leftIntoRight) {
                     leftRoot = shorter;
@@ -397,15 +432,15 @@ public abstract class RrbTree<E> implements BaseList<E>, Indented {
                 }
             }
 
-            // Here we either have 2 trees of equal height, or
-            // we have room in n for the shorter as a child.
+            // Here we either have 2 trees of equal height, or we have
+            // room in n for the shorter as a child.
 
             if (shorter.height() == (n.height() - 1)) {
 //            if (!n.thisNodeHasRelaxedCapacity(1)) {
 //                throw new IllegalStateException("somehow got here without relaxed capacity...");
 //            }
-                // Shorter one level below n and there's room
-                // Trees are not equal height and there's room somewhere.
+                // Shorter one level below n and there's room Trees
+                // are not equal height and there's room somewhere.
                 n = n.addEndChild(leftIntoRight, shorter);
 //            n.debugValidate();
             } else if (i < 0) {
@@ -425,15 +460,15 @@ public abstract class RrbTree<E> implements BaseList<E>, Indented {
                 throw new IllegalStateException("How did we get here?");
             }
 
-            // We've merged the nodes.  Now see if we need to create new parents
-            // to hold the changed sub-nodes...
+            // We've merged the nodes.  Now see if we need to create
+            // new parents to hold the changed sub-nodes...
             while (i >= 0) {
                 Node<E> anc = ancestors[i];
-                // By definition, I think that if we need a new root node, then we aren't dealing with
-
-                // leaf nodes, but I could be wrong.
-                // I also think we should get rid of relaxed nodes and everything will be much
-                // easier.
+                // By definition, I think that if we need a new root
+                // node, then we aren't dealing with leaf nodes, but I
+                // could be wrong.
+                // I also think we should get rid of relaxed nodes and
+                // everything will be much easier.
                 Relaxed<E> rel = (anc instanceof Strict) ? ((Strict) anc).relax()
                                                          : (Relaxed<E>) anc;
 
@@ -471,12 +506,14 @@ public abstract class RrbTree<E> implements BaseList<E>, Indented {
         @Override public int size() { return size; }
 
         /**
-         Divides this RRB-Tree such that every index less-than the given index ends up in the
-         left-hand tree and the indexed item and all subsequent ones end up in the right-hand tree.
-
-         @param splitIndex the split point (excluded from the left-tree, included in the right one)
-         @return two new sub-trees as determined by the split point.  If the point is 0 or
-         this.size() one tree will be empty (but never null).
+         Divides this RRB-Tree such that every index less-than the
+         given index ends up in the left-hand tree and the indexed
+         item and all subsequent ones end up in the right-hand tree.
+         @param splitIndex the split point (excluded from the
+                left-tree, included in the right one)
+         @return two new sub-trees as determined by the split point.
+                 If the point is 0 or this.size() one tree will be
+                 empty (but never null).
          */
         public Tuple2<MutableRrbt<E>,MutableRrbt<E>> split(int splitIndex) {
             if (splitIndex < 1) {
@@ -497,9 +534,10 @@ public abstract class RrbTree<E> implements BaseList<E>, Indented {
             // Push the focus before splitting.
             Node<E> newRoot = pushFocus();
 
-            // If a leaf-node is split, the fragments become the new focus for each side of the split.
-            // Otherwise, the focus can be left empty, or the last node of each side can be made into
-            // the focus.
+            // If a leaf-node is split, the fragments become the new
+            // focus for each side of the split.  Otherwise, the focus
+            // can be left empty, or the last node of each side can be
+            // made into the focus.
 
             SplitNode<E> split = newRoot.splitAt(splitIndex);
 
@@ -520,7 +558,8 @@ public abstract class RrbTree<E> implements BaseList<E>, Indented {
         }
     }
 
-    /** Immutable version of an {@link RrbTree}.  Timing information is available there. */
+    /** Immutable version of an {@link RrbTree}.  Timing information
+     * is available there. */
     public static class ImRrbt<E> extends RrbTree<E> implements ImList<E>, Serializable {
         private final E[] focus;
         private final int focusStartIndex;
@@ -531,16 +570,20 @@ public abstract class RrbTree<E> implements BaseList<E>, Indented {
             focus = f; focusStartIndex = fi; root = r; size = s;
         }
 
-        // ===================================== Serialization =====================================
-        // This class has a custom serialized form designed to be as small as possible.  It does not
-        // have the same internal structure as an instance of this class.
+        // =========================== Serialization ==========================
+        // This class has a custom serialized form designed to be as
+        // small as possible.  It does not have the same internal
+        // structure as an instance of this class.
 
-        // For serializable.  Make sure to change whenever internal data format changes.
+        // For serializable.  Make sure to change whenever internal
+        // data format changes.
         private static final long serialVersionUID = 20170625165600L;
 
-        // Check out Josh Bloch Item 78, p. 312 for an explanation of what's going on here.
+        // Check out Josh Bloch Item 78, p. 312 for an explanation of
+        // what's going on here.
         private static class SerializationProxy<E> implements Serializable {
-            // For serializable.  Make sure to change whenever internal data format changes.
+            // For serializable.  Make sure to change whenever
+            // internal data format changes.
             private static final long serialVersionUID = 20160904155600L;
 
             private final int size;
@@ -579,12 +622,13 @@ public abstract class RrbTree<E> implements BaseList<E>, Indented {
             throw new InvalidObjectException("Proxy required");
         }
 
-        // =================================== Instance Methods ===================================
+        // ========================= Instance Methods =========================
 
         /** {@inheritDoc} */
         @Override public ImRrbt<E> append(E val) {
-            // If our focus isn't set up for appends or if it's full, insert it into the data
-            // structure where it belongs.  Then make a new focus
+            // If our focus isn't set up for appends or if it's full,
+            // insert it into the data structure where it belongs.
+            // Then make a new focus
             if ( (focus.length >= STRICT_NODE_LENGTH) ||
                  ((focus.length > 0) &&
                   (focusStartIndex < (size - focus.length))) ) {
@@ -649,7 +693,8 @@ public abstract class RrbTree<E> implements BaseList<E>, Indented {
 
         /** {@inheritDoc} */
         @Override public ImRrbt<E> insert(int idx, E element) {
-            // If the focus is full, push it into the tree and make a new one with the new element.
+            // If the focus is full, push it into the tree and make a
+            // new one with the new element.
             if (focus.length >= STRICT_NODE_LENGTH) {
                 Node<E> newRoot = root.pushFocus(focusStartIndex, focus);
                 E[] newFocus = singleElementArray(element);
@@ -665,7 +710,8 @@ public abstract class RrbTree<E> implements BaseList<E>, Indented {
                 return new ImRrbt<>(newFocus, focusStartIndex, root, size + 1) ;
             }
 
-            // Here we are left with an insert somewhere else than the current focus.
+            // Here we are left with an insert somewhere else than the
+            // current focus.
             Node<E> newRoot = focus.length > 0 ? root.pushFocus(focusStartIndex,
                                                                            focus)
                                                     : root;
@@ -694,16 +740,18 @@ public abstract class RrbTree<E> implements BaseList<E>, Indented {
         }
 
         /**
-         Joins the given tree to the right side of this tree (or this to the left side of that one)
-         in something like O(log n) time.
+         Joins the given tree to the right side of this tree (or this
+         to the left side of that one) in something like O(log n)
+         time.
          */
         @SuppressWarnings("unchecked")
         public RrbTree<E> join(RrbTree<E> that) {
 
-            // We don't want to wonder below if we're inserting leaves or branch-nodes.
-            // Also, it leaves the tree cleaner to just smash leaves onto the bigger tree.
-            // Ultimately, we might want to see if we can grab the tail and stick it where it
-            // belongs but for now, this should be alright.
+            // We don't want to wonder below if we're inserting leaves
+            // or branch-nodes.  Also, it leaves the tree cleaner to
+            // just smash leaves onto the bigger tree.  Ultimately, we
+            // might want to see if we can grab the tail and stick it
+            // where it belongs but for now, this should be alright.
             if (that.size() < MAX_NODE_LENGTH) {
                 return concat(that);
             }
@@ -714,12 +762,15 @@ public abstract class RrbTree<E> implements BaseList<E>, Indented {
                 return that;
             }
 
-            // OK, here we've eliminated the case of merging a leaf into a tree.  We only have to
-            // deal with tree-into-tree merges below.
+            // OK, here we've eliminated the case of merging a leaf
+            // into a tree.  We only have to deal with tree-into-tree
+            // merges below.
             //
-            // Note that if the right-hand tree is bigger, we'll effectively add this tree to the
-            // left-hand side of that one.  It's logically the same as adding that tree to the right
-            // of this, but the mechanism by which it happens is a little different.
+            // Note that if the right-hand tree is bigger, we'll
+            // effectively add this tree to the left-hand side of that
+            // one.  It's logically the same as adding that tree to
+            // the right of this, but the mechanism by which it
+            // happens is a little different.
             Node<E> leftRoot = pushFocus();
             Node<E> rightRoot = that.pushFocus();
 
@@ -731,28 +782,34 @@ public abstract class RrbTree<E> implements BaseList<E>, Indented {
 //            throw new IllegalStateException("Right had unnecessary ancestors!");
 //        }
 
-            // Whether to add the right tree to the left one (true) or vice-versa (false).
-            // True also means left is taller, false: right is taller.
+            // Whether to add the right tree to the left one (true) or
+            // vice-versa (false).  True also means left is taller,
+            // false: right is taller.
             boolean leftIntoRight = leftRoot.height() < rightRoot.height();
             Node<E> taller = leftIntoRight ? rightRoot : leftRoot;
             Node<E> shorter = leftIntoRight ? leftRoot : rightRoot;
 
-            // Most compact: Descend the taller tree to shorter.height and find room for all
-            //     shorter children as children of that node.
+            // Most compact: Descend the taller tree to shorter.height
+            //     and find room for all shorter children as children
+            //     of that node.
             //
-            // Next: add the shorter node, unchanged, as a child to the taller tree at
-            //       shorter.height + 1
+            // Next: add the shorter node, unchanged, as a child to
+            //       the taller tree at shorter.height + 1
             //
-            // If that level of the taller tree is full, add an ancestor to the shorter node and try to
-            // fit at the next level up in the taller tree.
+            // If that level of the taller tree is full, add an
+            // ancestor to the shorter node and try to fit at the next
+            // level up in the taller tree.
             //
-            // If this brings us to the top of the taller tree (both trees are the same height), add a
-            // new parent node with leftRoot and rightRoot as children
+            // If this brings us to the top of the taller tree (both
+            // trees are the same height), add a new parent node with
+            // leftRoot and rightRoot as children
 
-            // Walk down the taller tree to one below the shorter, remembering ancestors.
+            // Walk down the taller tree to one below the shorter,
+            // remembering ancestors.
             Node<E> n = taller;
 
-            // This is the maximum we can descend into the taller tree (before running out of tree)
+            // This is the maximum we can descend into the taller tree
+            // (before running out of tree)
 //        int maxDescent = taller.height() - 1;
 
             // Actual amount we're going to descend.
@@ -770,16 +827,17 @@ public abstract class RrbTree<E> implements BaseList<E>, Indented {
 //            }
                 n = n.endChild(leftIntoRight);
             }
-            // i is incremented before leaving the loop, so decrement it here to make it point
-            // to ancestors.length - 1;
+            // i is incremented before leaving the loop, so decrement
+            // it here to make it point to ancestors.length - 1;
             i--;
 
 //        if (n.height() != shorter.height()) {
 //            throw new IllegalStateException("Didn't get to proper height");
 //        }
 
-            // Most compact: Descend the taller tree to shorter.height and find room for all
-            //     shorter children as children of that node.
+            // Most compact: Descend the taller tree to shorter.height
+            //     and find room for all shorter children as children
+            //     of that node.
             if (n.thisNodeHasRelaxedCapacity(shorter.numChildren())) {
                 // Adding kids of shorter to proper level of taller...
                 Node<E>[] kids;
@@ -804,20 +862,22 @@ public abstract class RrbTree<E> implements BaseList<E>, Indented {
             }
 
             // TODO: Is this used?
-            // While nodes in the taller are full, add a parent to the shorter and try the next level
-            // up.
+            // While nodes in the taller are full, add a parent to the
+            // shorter and try the next level up.
             while (!n.thisNodeHasRelaxedCapacity(1) &&
                    (i >= 0) ) {
 
-                // no room for short at this level (n has too many kids)
+                // no room for short at this level (n has too many
+                // kids)
                 n = ancestors[i];
                 i--;
 
                 shorter = addAncestor(shorter);
 //            shorter.debugValidate();
 
-                // Sometimes we care about which is shorter and sometimes about left and right.
-                // Since we fixed the shorter tree, we have to update the left/right
+                // Sometimes we care about which is shorter and
+                // sometimes about left and right.  Since we fixed the
+                // shorter tree, we have to update the left/right
                 // pointer to point to the new shorter.
                 if (leftIntoRight) {
                     leftRoot = shorter;
@@ -826,8 +886,8 @@ public abstract class RrbTree<E> implements BaseList<E>, Indented {
                 }
             }
 
-            // Here we either have 2 trees of equal height, or
-            // we have room in n for the shorter as a child.
+            // Here we either have 2 trees of equal height, or we have
+            // room in n for the shorter as a child.
 
             if (shorter.height() == (n.height() - 1)) {
 //            if (!n.thisNodeHasRelaxedCapacity(1)) {
@@ -854,15 +914,15 @@ public abstract class RrbTree<E> implements BaseList<E>, Indented {
                 throw new IllegalStateException("How did we get here?");
             }
 
-            // We've merged the nodes.  Now see if we need to create new parents
-            // to hold the changed sub-nodes...
+            // We've merged the nodes.  Now see if we need to create
+            // new parents to hold the changed sub-nodes...
             while (i >= 0) {
                 Node<E> anc = ancestors[i];
-                // By definition, I think that if we need a new root node, then we aren't dealing with
-
-                // leaf nodes, but I could be wrong.
-                // I also think we should get rid of relaxed nodes and everything will be much
-                // easier.
+                // By definition, I think that if we need a new root
+                // node, then we aren't dealing with leaf nodes, but I
+                // could be wrong.
+                // I also think we should get rid of relaxed nodes and
+                // everything will be much easier.
                 Relaxed<E> rel = (anc instanceof Strict) ? ((Strict) anc).relax()
                                                          : (Relaxed<E>) anc;
 
@@ -900,12 +960,14 @@ public abstract class RrbTree<E> implements BaseList<E>, Indented {
         @Override public int size() { return size; }
 
         /**
-         Divides this RRB-Tree such that every index less-than the given index ends up in the left-hand
-         tree and the indexed item and all subsequent ones end up in the right-hand tree.
-
-         @param splitIndex the split point (excluded from the left-tree, included in the right one)
-         @return two new sub-trees as determined by the split point.  If the point is 0 or this.size()
-         one tree will be empty (but never null).
+         Divides this RRB-Tree such that every index less-than the
+         given index ends up in the left-hand tree and the indexed
+         item and all subsequent ones end up in the right-hand tree.
+         @param splitIndex the split point (excluded from the
+                left-tree, included in the right one)
+         @return two new sub-trees as determined by the split point.
+                 If the point is 0 or this.size() one tree will be
+                 empty (but never null).
          */
         public Tuple2<ImRrbt<E>,ImRrbt<E>> split(int splitIndex) {
             if (splitIndex < 1) {
@@ -926,9 +988,10 @@ public abstract class RrbTree<E> implements BaseList<E>, Indented {
             // Push the focus before splitting.
             Node<E> newRoot = pushFocus();
 
-            // If a leaf-node is split, the fragments become the new focus for each side of the split.
-            // Otherwise, the focus can be left empty, or the last node of each side can be made into
-            // the focus.
+            // If a leaf-node is split, the fragments become the new
+            // focus for each side of the split.  Otherwise, the focus
+            // can be left empty, or the last node of each side can be
+            // made into the focus.
 
             SplitNode<E> split = newRoot.splitAt(splitIndex);
 
@@ -979,7 +1042,7 @@ public abstract class RrbTree<E> implements BaseList<E>, Indented {
     }
 
 
-    // ===================================== Instance Methods =====================================
+    // =========================== Instance Methods ===========================
 
     /** {@inheritDoc} */
     @Override abstract public RrbTree<E> append(E t);
@@ -991,8 +1054,8 @@ public abstract class RrbTree<E> implements BaseList<E>, Indented {
     @Override abstract public E get(int i);
 
     /**
-     Inserts an item in the RRB tree pushing the current element at that index and all subsequent
-     elements to the right.
+     Inserts an item in the RRB tree pushing the current element at
+     that index and all subsequent elements to the right.
      @param idx the insertion point
      @param element the item to insert
      @return a new RRB-Tree with the item inserted.
@@ -1004,17 +1067,21 @@ public abstract class RrbTree<E> implements BaseList<E>, Indented {
     @Override abstract public UnmodSortedIterator<E> iterator();
 
 /*
-I'm implementing something like the [Bagwell/Rompf RRB-Tree][1] and I'm a little unsatisfied with
-the details of the join/merge algorithm.  I wonder if there's a standard way to do this that they
-assume that I know (I don't), or if someone has come up with a better way to do this.
+I'm implementing something like the [Bagwell/Rompf RRB-Tree][1] and
+I'm a little unsatisfied with the details of the join/merge algorithm.
+I wonder if there's a standard way to do this that they assume that I
+know (I don't), or if someone has come up with a better way to do
+this.
 
 I'm thinking the signature is something like:
 
     public RrbTree<E> join(RrbTree<? extends E> that)
 
-My basic approach was to fit the shorter tree into the left-most or right-most leg of the taller
-tree at the correct height.  For `a.join(b)`, if `b` is taller, fit `a` into `b`'s left-most leg at
-the right height, otherwise fit `b` into `a`'s right-most leg at the right height
+My basic approach was to fit the shorter tree into the left-most or
+right-most leg of the taller tree at the correct height.  For
+`a.join(b)`, if `b` is taller, fit `a` into `b`'s left-most leg at the
+right height, otherwise fit `b` into `a`'s right-most leg at the right
+height
 
 Overview:
 
@@ -1022,24 +1089,28 @@ Overview:
 
 2. Find the height of each tree.
 
-3. Stick the shorter tree into the proper level of the larger tree (on the left or right as
-appropriate).  If the leftmost/rightmost node at the proper level level of the larger tree is full,
-add a "skinny leg" (a new root with a single child) to the short tree and stick it on the left or
-right one level up in the large one.  If the large tree is packed, several skinny-leg insertion
-attempts may be required, or even a new root added to the large tree with 2 children: the old
-large tree and the smaller tree on the appropriate side of it.
+3. Stick the shorter tree into the proper level of the larger tree (on
+the left or right as appropriate).  If the leftmost/rightmost node at
+the proper level of the larger tree is full, add a "skinny leg" (a new
+root with a single child) to the short tree and stick it on the left
+or right one level up in the large one.  If the large tree is packed,
+several skinny-leg insertion attempts may be required, or even a new
+root added to the large tree with 2 children: the old large tree and
+the smaller tree on the appropriate side of it.
 
-Optimization: If one tree is really small, we could do an append or prepend.
+Optimization: If one tree is really small, we could do an append or
+prepend.
 
-I don't see the advantage of zipping nodes together at every level the very complicated
-way it seems to do in the paper.  Even after all that work, it still has nodes of varying sizes and
-involves changing more nodes than maybe necessary.
+I don't see the advantage of zipping nodes together at every level the
+very complicated way it seems to do in the paper.  Even after all that
+work, it still has nodes of varying sizes and involves changing more
+nodes than maybe necessary.
 
   [1]: https://infoscience.epfl.ch/record/169879/files/RMTrees.pdf
 */
     /**
-     Joins the given tree to the right side of this tree (or this to the left side of that one) in
-     something like O(log n) time.
+     Joins the given tree to the right side of this tree (or this to
+     the left side of that one) in something like O(log n) time.
      */
     public abstract RrbTree<E> join(RrbTree<E> that);
 
@@ -1053,18 +1124,20 @@ involves changing more nodes than maybe necessary.
     @Override abstract public int size();
 
     /**
-     Divides this RRB-Tree such that every index less-than the given index ends up in the left-hand
-     tree and the indexed item and all subsequent ones end up in the right-hand tree.
-
-     @param splitIndex the split point (excluded from the left-tree, included in the right one)
-     @return two new sub-trees as determined by the split point.  If the point is 0 or this.size()
-     one tree will be empty (but never null).
+     Divides this RRB-Tree such that every index less-than the given
+     index ends up in the left-hand tree and the indexed item and all
+     subsequent ones end up in the right-hand tree.
+     @param splitIndex the split point (excluded from the left-tree,
+            included in the right one)
+     @return two new sub-trees as determined by the split point.  If
+             the point is 0 or this.size() one tree will be empty (but
+             never null).
      */
     abstract public Tuple2<? extends RrbTree<E>,? extends RrbTree<E>> split(int splitIndex);
 
     /**
-     Returns a new RrbTree minus the given item (all items to the right are shifted left one)
-     This is O(log n).
+     Returns a new RrbTree minus the given item (all items to the
+     right are shifted left one).  This is O(log n).
      */
     public RrbTree<E> without(int index) {
         if ( (index > 0) && (index < size() - 1) ) {
@@ -1101,7 +1174,7 @@ involves changing more nodes than maybe necessary.
                              (Node<E>[]) new Node[]{n});
     }
 
-    // ================================== Standard Object Methods ==================================
+    // ======================== Standard Object Methods ========================
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
@@ -1113,7 +1186,8 @@ involves changing more nodes than maybe necessary.
                UnmodSortedIterable.equal(this, UnmodSortedIterable.castFromList(that));
     }
 
-    /** This implementation is correct and compatible with java.util.AbstractList, but O(n). */
+    /** This implementation is correct and compatible with
+     * java.util.AbstractList, but O(n). */
     @Override public int hashCode() {
         int ret = 1;
         for (E item : this) {
@@ -1128,18 +1202,22 @@ involves changing more nodes than maybe necessary.
     /** {@inheritDoc} */
     @Override abstract public String indentedStr(int indent);
 
-    // ================================== Implementation Details ==================================
+    // ======================== Implementation Details ========================
 
     // Definitions:
-    // Strict: Short for "Strict Radix."  Strict nodes have leaf widths of exactly
-    //         STRICT_NODE_LENGTH and are left-filled and packed up to the last full node.  This
-    //         lets us use a power of 2 to take advantage of bit shifting to exactly index which
-    //         sub-node an item is found in.  Does not support inserts (only appends).
-    // Relaxed: short for "Relaxed Radix."   Relaxed nodes are of somewhat varying sizes, ranging
-    //          from MIN_NODE_LENGTH (Cormen et al calls this "Minimum Degree") to MAX_NODE_LENGTH.
-    //          This requires linear interpolation, a bit of searching, and subtraction to find an
-    //          index into a sub-node, but supports inserts, split, and combine (with another
-    //          RrbTree)
+    // Strict: Short for "Strict Radix."  Strict nodes have leaf
+    //         widths of exactly STRICT_NODE_LENGTH and are
+    //         left-filled and packed up to the last full node.  This
+    //         lets us use a power of 2 to take advantage of bit
+    //         shifting to exactly index which sub-node an item is
+    //         found in.  Does not support inserts (only appends).
+    // Relaxed: short for "Relaxed Radix."  Relaxed nodes are of
+    //         somewhat varying sizes, ranging from MIN_NODE_LENGTH
+    //         (Cormen et al calls this "Minimum Degree") to
+    //         MAX_NODE_LENGTH.  This requires linear interpolation, a
+    //         bit of searching, and subtraction to find an index into
+    //         a sub-node, but supports inserts, split, and combine
+    //         (with another RrbTree).
 
     // There's bit shifting going on here because it's a very fast operation.
     // Shifting right by 5 is eons faster than dividing by 32.
@@ -1150,18 +1228,19 @@ involves changing more nodes than maybe necessary.
 
     private static final int HALF_STRICT_NODE_LENGTH = STRICT_NODE_LENGTH >> 1;
 
-    // (MIN_NODE_LENGTH + MAX_NODE_LENGTH) / 2 should equal STRICT_NODE_LENGTH so that they have the
-    // same average node size to make the index interpolation easier.
+    // (MIN_NODE_LENGTH + MAX_NODE_LENGTH) / 2 should equal
+    // STRICT_NODE_LENGTH so that they have the same average node size
+    // to make the index interpolation easier.
     private static final int MIN_NODE_LENGTH = (STRICT_NODE_LENGTH+1) * 2 / 3;
-    // Always check if less-than this.  Never less-than-or-equal.  Cormen adds a -1 here and tests
-    // for <= (I think!).
+    // Always check if less-than this.  Never less-than-or-equal.
+    // Cormen adds a -1 here and tests for <= (I think!).
     private static final int MAX_NODE_LENGTH = ( (STRICT_NODE_LENGTH+1) * 4 / 3);
 
     private static final Leaf EMPTY_LEAF = new Leaf<>(EMPTY_ARRAY);
     @SuppressWarnings("unchecked")
     private static <T> Leaf<T> emptyLeaf() { return (Leaf<T>) EMPTY_LEAF; }
 
-    // ================================ Node private inner classes ================================
+    // ====================== Node private inner classes ======================
 
     private interface Node<T> extends Indented {
         /** Returns the immediate child node at the given index. */
@@ -1181,10 +1260,12 @@ involves changing more nodes than maybe necessary.
         /** Return the item at the given index */
         T get(int i);
 
-        /** Returns true if this strict-Radix tree can take another 32 items. */
+        /** Returns true if this strict-Radix tree can take another 32
+	 * items. */
         boolean hasStrictCapacity();
 
-        /** Returns the maximum depth below this node.  Leaf nodes are height 1. */
+        /** Returns the maximum depth below this node.  Leaf nodes are
+	 * height 1. */
         int height();
 
 //        /** Try to add all sub-nodes to this one. */
@@ -1214,9 +1295,11 @@ involves changing more nodes than maybe necessary.
         /** Returns the number of immediate children of this node, not all descendants. */
         int numChildren();
 
-        // Because we want to append/insert into the focus as much as possible, we will treat
-        // the insert or append of a single item as a degenerate case.  Instead, the primary way
-        // to add to the internal data structure will be to push the entire focus array into it
+        // Because we want to append/insert into the focus as much as
+        // possible, we will treat the insert or append of a single
+        // item as a degenerate case.  Instead, the primary way to add
+        // to the internal data structure will be to push the entire
+        // focus array into it
         Node<T> pushFocus(int index, T[] oldFocus);
 
         Node<T> replace(int idx, T t);
@@ -1280,8 +1363,8 @@ involves changing more nodes than maybe necessary.
 
     private static class Leaf<T> implements Node<T> {
         final T[] items;
-        // It can only be Strict if items.length == STRICT_NODE_LENGTH and if its parents
-        // are strict.
+        // It can only be Strict if items.length == STRICT_NODE_LENGTH
+        // and if its parents are strict.
 //        boolean isStrict;
         Leaf(T[] ts) { items = ts; }
 
@@ -1323,14 +1406,15 @@ involves changing more nodes than maybe necessary.
         @Override public int height() { return 1; }
 
         @Override public int size() { return items.length; }
-        // If we want to add one more to an existing leaf node, it must already be part of a
-        // relaxed tree.
+        // If we want to add one more to an existing leaf node, it
+        // must already be part of a relaxed tree.
 //        public boolean thisNodeHasCapacity() { return items.length < MAX_NODE_LENGTH; }
 
         @Override public boolean hasStrictCapacity() { return false; }
 
         @Override public boolean hasRelaxedCapacity(int index, int size) {
-            // Appends and prepends need to be a good size, but random inserts do not.
+            // Appends and prepends need to be a good size, but random
+            // inserts do not.
 //            if ( (size < 1) || (size >= MAX_NODE_LENGTH) ) {
 //                throw new IllegalArgumentException("Bad size: " + size);
 //              // + " MIN_NODE_LENGTH=" + MIN_NODE_LENGTH + " MAX_NODE_LENGTH=" + MAX_NODE_LENGTH);
@@ -1347,7 +1431,8 @@ involves changing more nodes than maybe necessary.
 //                throw new IllegalArgumentException("Called splitAt when splitIndex > orig.length - 1");
 //            }
 
-            // Should we just ensure that the split is between 1 and items.length (exclusive)?
+            // Should we just ensure that the split is between 1 and
+            // items.length (exclusive)?
             if (splitIndex == 0) {
                 return new SplitNode<>(emptyLeaf(), emptyArray(), emptyLeaf(), items);
             }
@@ -1391,16 +1476,18 @@ involves changing more nodes than maybe necessary.
 //            if (oldFocus.length == 0) {
 //                throw new IllegalStateException("Never call this with an empty focus!");
 //            }
-            // We put the empty Leaf as the root of the empty vector and it stays there
-            // until the first call to this method, at which point, the oldFocus becomes the
-            // new root.
+            // We put the empty Leaf as the root of the empty vector
+            // and it stays there until the first call to this method,
+            // at which point, the oldFocus becomes the new root.
             if (items.length == 0) {
                 return new Leaf<>(oldFocus);
             }
 
-            // Try first to yield a Strict node.  For a leaf like this, that means both this node
-            // and the pushed focus are STRICT_NODE_LENGTH.  It also means the old focus is being
-            // pushed at either the beginning or the end of this node (not anywhere in-between).
+            // Try first to yield a Strict node.  For a leaf like
+            // this, that means both this node and the pushed focus
+            // are STRICT_NODE_LENGTH.  It also means the old focus is
+            // being pushed at either the beginning or the end of this
+            // node (not anywhere in-between).
             if ( (items.length == STRICT_NODE_LENGTH) &&
                  (oldFocus.length == STRICT_NODE_LENGTH) &&
                  ((index == STRICT_NODE_LENGTH) || (index == 0)) ) {
@@ -1421,8 +1508,9 @@ involves changing more nodes than maybe necessary.
             }
 
             // We should only get here when the root node is a leaf.
-            // Maybe we should be more circumspect with our array creation, but for now, just jam
-            // jam it into one big array, then split it up for simplicity
+            // Maybe we should be more circumspect with our array
+            // creation, but for now, just jam jam it into one big
+            // array, then split it up for simplicity
             Leaf<T>[] res = spliceAndSplit(oldFocus, index);
             Leaf<T> leftLeaf = res[0];
             Leaf<T> rightLeaf = res[1];
@@ -1459,8 +1547,9 @@ involves changing more nodes than maybe necessary.
 
     // Contains a left-packed tree of exactly 32-item nodes.
     private static class Strict<T> implements Node<T> {
-        // This is the number of levels below this node (height) times NODE_LENGTH
-        // For speed, we calculate it as height << NODE_LENGTH_POW_2
+        // This is the number of levels below this node (height) times
+        // NODE_LENGTH For speed, we calculate it as height <<
+        // NODE_LENGTH_POW_2
         // TODO: Can we store shift at the top-level Strict only?
         final int shift;
         final int size;
@@ -1543,41 +1632,48 @@ involves changing more nodes than maybe necessary.
         }
 
         /**
-         Returns the highest bits which we use to index into our array - the index of the immediate
-         child of this node.  This is the simplicity (and
-         speed) of Strict indexing.  When everything works, this can be inlined for performance.
-         This could maybe yield a good guess for Relaxed nodes?
+         Returns the highest bits which we use to index into our array
+         - the index of the immediate child of this node.  This is the
+         simplicity (and speed) of Strict indexing.  When everything
+         works, this can be inlined for performance.  This could maybe
+         yield a good guess for Relaxed nodes?
 
-         Shifting right by a number is equivalent to dividing by: 2 raised to the power of that
-         number.
+         Shifting right by a number is equivalent to dividing by: 2
+         raised to the power of that number.
          i >> n is equivalent to i / (2^n)
          */
         private int highBits(int i) { return i >> shift; }
 
         /**
-         Returns the low bits of the index (the part Strict sub-nodes need to know about).  This
-         only works because the leaf nodes are all the same size and that size is a power of 2
-         (the radix).  All branch must have the same radix (branching factor or number of immediate
-         sub-nodes).
+         Returns the low bits of the index (the part Strict sub-nodes
+         need to know about).  This only works because the leaf nodes
+         are all the same size and that size is a power of 2 (the
+         radix).  All branch must have the same radix (branching
+         factor or number of immediate sub-nodes).
 
-         Bit shifting is faster than addition or multiplication, but perhaps more importantly, it
-         means we don't have to store the sizes of the nodes which means we don't have to fetch
-         those sizes from memory or use up cache space.  All of this helps make this data structure
-         simple and fast.
+         Bit shifting is faster than addition or multiplication, but
+         perhaps more importantly, it means we don't have to store the
+         sizes of the nodes which means we don't have to fetch those
+         sizes from memory or use up cache space.  All of this helps
+         make this data structure simple and fast.
 
-         When everything works, this function can be inlined for performance (if that even helps).
-         Contrast this with how Relaxed nodes work: they use subtraction instead!
+         When everything works, this function can be inlined for
+         performance (if that even helps).  Contrast this with how
+         Relaxed nodes work: they use subtraction instead!
          */
         private int lowBits(int i) {
-            // Little trick: -1 in binary is all ones: 0b11111111111111111111111111111111
-            // We shift it left, filling the right-most bits with zeros and creating a bit-mask
-            // with ones on the left and zeros on the right
+            // Little trick: -1 in binary is all ones:
+            // 0b11111111111111111111111111111111 We shift it left,
+            // filling the right-most bits with zeros and creating a
+            // bit-mask with ones on the left and zeros on the right
             int shifter = -1 << shift;
 
-            // Now we take the inverse so our bit-mask has zeros on the left and ones on the right
+            // Now we take the inverse so our bit-mask has zeros on
+            // the left and ones on the right
             int invShifter = ~shifter;
 
-            // Finally, we bitwise-and the mask with the index to leave only the low bits.
+            // Finally, we bitwise-and the mask with the index to
+            // leave only the low bits.
             return  i & invShifter;
         }
 
@@ -1602,11 +1698,13 @@ involves changing more nodes than maybe necessary.
 //                throw new IllegalStateException("Won't work!");
 //            }
 
-            // This works because when a strict node is not full, it's highest child index is
-            // STRICT_NODE_LENGTH - 1 (which is what highBits(size) will return.
-            // This used to then walk down the right hand side of the tree checking for room.
-            // But it turns out that the highest index would have lowBits() equals all ones.
-            // size is the maxIndex + 1, so that flips the lowest bit of highBits() and makes
+            // This works because when a strict node is not full, it's
+            // highest child index is STRICT_NODE_LENGTH - 1 (which is
+            // what highBits(size) will return.  This used to then
+            // walk down the right hand side of the tree checking for
+            // room.  But it turns out that the highest index would
+            // have lowBits() equals all ones.  size is the maxIndex +
+            // 1, so that flips the lowest bit of highBits() and makes
             // all lowBits() zeros so that the following line works:
             return highBits(size) != STRICT_NODE_LENGTH;
         }
@@ -1615,8 +1713,9 @@ involves changing more nodes than maybe necessary.
 //            if ( (size < 1) || (size >= MAX_NODE_LENGTH) ) {
 //                throw new IllegalArgumentException("Bad size: " + size);
 //            }
-            // It has relaxed capacity because a Relaxed node could have up to MAX_NODE_LENGTH nodes
-            // and by definition this Strict node has exactly STRICT_NODE_LENGTH items.
+            // It has relaxed capacity because a Relaxed node could
+            // have up to MAX_NODE_LENGTH nodes and by definition this
+            // Strict node has exactly STRICT_NODE_LENGTH items.
             return size < MAX_NODE_LENGTH - STRICT_NODE_LENGTH;
         }
 
@@ -1634,8 +1733,8 @@ involves changing more nodes than maybe necessary.
                 return new SplitNode<>(this, emptyArray(), emptyLeaf(), emptyArray());
             }
 
-            // Not split on a child boundary, so find which child to split and pass it the
-            // appropriate index.
+            // Not split on a child boundary, so find which child to
+            // split and pass it the appropriate index.
             int subNodeIndex = highBits(splitIndex);
             Node<T> subNode = nodes[subNodeIndex];
             int subNodeAdjustedIndex = lowBits(splitIndex);
@@ -1650,7 +1749,8 @@ involves changing more nodes than maybe necessary.
                 boolean haveLeft = (splitLeft.size() > 0);
                 int numLeftItems = subNodeIndex + (haveLeft ? 1 : 0);
                 Node<T>[] leftNodes = genericNodeArray(numLeftItems);
-                // Copy one less item if we are going to add the split one in a moment.
+                // Copy one less item if we are going to add the split
+                // one in a moment.
                 // I could have written:
                 //     haveLeft ? numLeftItems - 1
                 //              : numLeftItems
@@ -1700,15 +1800,16 @@ involves changing more nodes than maybe necessary.
         Relaxed<T> relax() {
             int[] newCumSizes = new int[nodes.length];
             int cumulativeSize = 0;
-            // We know all sub-nodes (except the last) have the same size because they are
-            // packed-left.
+            // We know all sub-nodes (except the last) have the same
+            // size because they are packed-left.
             int subNodeSize = nodes[0].size();
             for (int i = 0; i < nodes.length - 1; i++) {
                 cumulativeSize += subNodeSize;
                 newCumSizes[i] = cumulativeSize;
             }
 
-            // Final node may not be packed, so it could have a different size
+            // Final node may not be packed, so it could have a
+            // different size
             cumulativeSize += nodes[nodes.length - 1].size();
             newCumSizes[newCumSizes.length - 1] = cumulativeSize;
 
@@ -1720,41 +1821,50 @@ involves changing more nodes than maybe necessary.
         @SuppressWarnings("unchecked")
         @Override
         public Node<T> pushFocus(int index, T[] oldFocus) {
-            // If the proper sub-node can take the additional array, let it!
+            // If the proper sub-node can take the additional array,
+            // let it!
             int subNodeIndex = highBits(index);
 
-            // It's a strict-compatible addition if the focus being pushed is of
-            // STRICT_NODE_LENGTH and the index it's pushed to falls on the final leaf-node boundary
-            // and the children of this node are leaves and this node is not full.
+            // It's a strict-compatible addition if the focus being
+            // pushed is of STRICT_NODE_LENGTH and the index it's
+            // pushed to falls on the final leaf-node boundary and the
+            // children of this node are leaves and this node is not
+            // full.
             if (oldFocus.length == STRICT_NODE_LENGTH) {
 
                 if (index == size()) {
                     Node<T> lastNode = nodes[nodes.length - 1];
                     if (lastNode.hasStrictCapacity()) {
-                        // Pushing focus down to lower-level node with capacity.
+                        // Pushing focus down to lower-level node with
+                        // capacity.
                         // TODO: This line appears to be the slowest part.
 
-                        // This variable is my attempt to prevent dynamic dispatch on the call
-                        // to pushFocus()
+                        // This variable is my attempt to prevent
+                        // dynamic dispatch on the call to pushFocus()
                         Strict<T> strict = (Strict<T>) lastNode;
                         Node<T> newNode = strict.pushFocus(lowBits(index), oldFocus);
                         Node<T>[] newNodes = replaceInArrayAt(newNode, nodes, nodes.length - 1,
                                                               Node.class);
                         return new Strict<>(shift, size + oldFocus.length, newNodes);
                     }
-                    // Regardless of what else happens, we're going to add a new node.
+                    // Regardless of what else happens, we're going to
+                    // add a new node.
                     Node<T> newNode = new Leaf<>(oldFocus);
 
-                    // Make a skinny branch of a tree by walking up from the leaf node until our
-                    // new branch is at the same level as the old one.  We have to build evenly
-                    // (like hotels in Monopoly) in order to keep the tree balanced.  Even height,
-                    // but left-packed (the lower indices must all be filled before adding new
-                    // nodes to the right).
+                    // Make a skinny branch of a tree by walking up
+                    // from the leaf node until our new branch is at
+                    // the same level as the old one.  We have to
+                    // build evenly (like hotels in Monopoly) in order
+                    // to keep the tree balanced.  Even height, but
+                    // left-packed (the lower indices must all be
+                    // filled before adding new nodes to the right).
                     int newShift = NODE_LENGTH_POW_2;
 
-                    // If we've got space in our array, we just have to add skinny-branch nodes up
-                    // to the level below ours.  But if we don't have space, we have to add a
-                    // single-element strict node at the same level as ours here too.
+                    // If we've got space in our array, we just have
+                    // to add skinny-branch nodes up to the level
+                    // below ours.  But if we don't have space, we
+                    // have to add a single-element strict node at the
+                    // same level as ours here too.
                     int maxShift = (nodes.length < STRICT_NODE_LENGTH) ? shift : shift + 1;
 
                     // Make the skinny-branch of single-element strict nodes:
@@ -1765,14 +1875,16 @@ involves changing more nodes than maybe necessary.
                     }
 
                     if ((nodes.length < STRICT_NODE_LENGTH)) {
-                        // This will fail at runtime if we use an array of Objects instead of Nodes.
-                        // To do that, we'd have to convert all this to Objects and cast each item as
-                        // it comes off.
+                        // This will fail at runtime if we use an
+                        // array of Objects instead of Nodes.  To do
+                        // that, we'd have to convert all this to
+                        // Objects and cast each item as it comes off.
                         //
                         // Add a node to the existing array
                         Node<T>[] newNodes =
                                 insertIntoArrayAt(newNode, nodes, subNodeIndex, Node.class);
-                        // This could allow cheap strict inserts on any leaf-node boundary...
+                        // This could allow cheap strict inserts on
+                        // any leaf-node boundary...
                         return new Strict<>(shift, size + oldFocus.length, newNodes);
                     } else {
                         // Add a level to the Strict tree
@@ -1786,22 +1898,27 @@ involves changing more nodes than maybe necessary.
                     // Here we are:
                     //    Pushing a STRICT_NODE_LENGTH focus
                     //    At the level above the leaf nodes
-                    //    Inserting *between* existing leaf nodes (or before or after)
+                    //    Inserting *between* existing leaf nodes (or
+                    //      before or after)
                     //    Have room for at least one more leaf child
-                    // That makes it free and legal to insert a new STRICT_NODE_LENGTH leaf node and
-                    // still yield a Strict (as opposed to Relaxed).
+                    // That makes it free and legal to insert a new
+                    // STRICT_NODE_LENGTH leaf node and still yield a
+                    // Strict (as opposed to Relaxed).
 
-                    // Regardless of what else happens, we're going to add a new node.
+                    // Regardless of what else happens, we're going to
+                    // add a new node.
                     Node<T> newNode = new Leaf<>(oldFocus);
 
                     Node<T>[] newNodes =
                             insertIntoArrayAt(newNode, nodes, subNodeIndex, Node.class);
-                    // This allows cheap strict inserts on any leaf-node boundary...
+                    // This allows cheap strict inserts on any
+                    // leaf-node boundary...
                     return new Strict<>(shift, size + oldFocus.length, newNodes);
                 }
             } // end if oldFocus.length == STRICT_NODE_LENGTH
 
-            // Here we're going to yield a Relaxed Radix node, so punt to that (slower) logic.
+            // Here we're going to yield a Relaxed Radix node, so punt
+            // to that (slower) logic.
             return relax().pushFocus(index, oldFocus);
         }
 
@@ -1840,9 +1957,11 @@ involves changing more nodes than maybe necessary.
     // Contains a relaxed tree of nodes that average around 32 items each.
     private static class Relaxed<T> implements Node<T> {
 
-        // Holds the size of each sub-node and plus all nodes to its left.  You could think of this
-        // as maxIndex + 1. This is a separate array so it can be retrieved in a single memory
-        // fetch.  Note that this is a 1-based count, not a zero-based index.
+        // Holds the size of each sub-node and plus all nodes to its
+        // left.  You could think of this as maxIndex + 1. This is a
+        // separate array so it can be retrieved in a single memory
+        // fetch.  Note that this is a 1-based count, not a zero-based
+        // index.
         final int[] cumulativeSizes;
         // The sub nodes
         final Node<T>[] nodes;
@@ -1852,7 +1971,8 @@ involves changing more nodes than maybe necessary.
             cumulativeSizes = szs;
             nodes = ns;
 
-            // Consider removing constraint validations before shipping for performance
+            // Consider removing constraint validations before
+            // shipping for performance
 //            if (cumulativeSizes.length < 1) {
 //                throw new IllegalArgumentException("cumulativeSizes.length < 1");
 //            }
@@ -1927,8 +2047,8 @@ involves changing more nodes than maybe necessary.
             Node<T>[] res = spliceIntoArrayAt(newKids, nodes,
                                               leftMost ? 0
                                                        : nodes.length, Node.class);
-            // TODO: Figure out which side we inserted on and do the math to adjust counts instead
-            // of looking them up.
+            // TODO: Figure out which side we inserted on and do the
+            // math to adjust counts instead of looking them up.
             return new Relaxed<>(makeSizeArray(res), res);
         }
 
@@ -1939,9 +2059,11 @@ involves changing more nodes than maybe necessary.
         }
 
         /**
-         Converts the index of an item into the index of the sub-node containing that item.
+         Converts the index of an item into the index of the sub-node
+         containing that item.
          @param treeIndex The index of the item in the tree
-         @return The index of the immediate child of this node that the desired node resides in.
+         @return The index of the immediate child of this node that
+                 the desired node resides in.
          */
         private int subNodeIndex(int treeIndex) {
             // For radix=4 this is actually faster, or at least as fast...
@@ -1973,20 +2095,23 @@ involves changing more nodes than maybe necessary.
             }
             int guessedCumSize = cumulativeSizes[guess];
 
-            // Now we must check the guess.  The cumulativeSizes we store are slightly misnamed because
-            // the max valid treeIndex for a node is its size - 1.  If our guessedCumSize is
+            // Now we must check the guess.  The cumulativeSizes we
+            // store are slightly misnamed because the max valid
+            // treeIndex for a node is its size - 1.  If our
+            // guessedCumSize is
             //  - less than the treeIndex
-            //         Increment guess and check result again until greater, then return
-            //         that guess
+            //         Increment guess and check result again until
+            //         greater, then return that guess
             //  - greater than (treeIndex + MIN_NODE_SIZE)
-            //         Decrement guess and check result again until less, then return PREVIOUS guess
+            //         Decrement guess and check result again until
+            //         less, then return PREVIOUS guess
             //  - equal to the treeIndex (see note about size)
             //         If treeIndex == size Return guess
             //         Else return guess + 1
 
             // guessedCumSize less than the treeIndex
-            //         Increment guess and check result again until greater, then return
-            //         that guess
+            //         Increment guess and check result again until
+            //         greater, then return that guess
             if (guessedCumSize < treeIndex) {
                 while (guess < (cumulativeSizes.length - 1)) {
 //                    System.out.println("    Too low.  Check higher...");
@@ -2003,7 +2128,8 @@ involves changing more nodes than maybe necessary.
             } else if (guessedCumSize > (treeIndex + MIN_NODE_LENGTH)) {
 
                 // guessedCumSize greater than (treeIndex + MIN_NODE_LENGTH)
-                //         Decrement guess and check result again until less, then return PREVIOUS guess
+                //         Decrement guess and check result again
+                //         until less, then return PREVIOUS guess
                 while (guess > 0) {
 //                    System.out.println("    Maybe too high.  Check lower...");
                     int nextGuess = guess - 1;
@@ -2023,11 +2149,14 @@ involves changing more nodes than maybe necessary.
                 //         If treeIndex == size Return guess
                 //         Else return guess + 1
 //                System.out.println("    Equal, so should be simple...");
-                // For an append just one element beyond the end of the existing data structure,
-                // just try to add it to the last node.  This might seem overly permissive to accept
-                // these as inserts or appends without differentiating between the two, but it flows
-                // naturally with this data structure and I think makes it easier to use without
-                // encouraging user programming errors.
+                // For an append just one element beyond the end of
+                // the existing data structure, just try to add it to
+                // the last node.  This might seem overly permissive
+                // to accept these as inserts or appends without
+                // differentiating between the two, but it flows
+                // naturally with this data structure and I think
+                // makes it easier to use without encouraging user
+                // programming errors.
                 // Hopefully this still leads to a relatively balanced tree...
                 return (treeIndex == size()) ? guess : guess + 1;
             } else {
@@ -2037,7 +2166,8 @@ involves changing more nodes than maybe necessary.
         }
 
         /**
-         Converts the index of an item into the index to pass to the sub-node containing that item.
+         Converts the index of an item into the index to pass to the
+         sub-node containing that item.
          @param index The index of the item in the entire tree
          @param subNodeIndex the index into this node's array of sub-nodes.
          @return The index to pass to the sub-branch the item resides in
@@ -2057,7 +2187,8 @@ involves changing more nodes than maybe necessary.
             return nodes.length + numNodes < MAX_NODE_LENGTH;
         }
 
-        // I don't think this should ever be called.  Should this throw an exception instead?
+        // I don't think this should ever be called.  Should this
+        // throw an exception instead?
         @Override public boolean hasStrictCapacity() {
             throw new UnsupportedOperationException("I don't think this should ever be called.");
 //            return false;
@@ -2149,7 +2280,8 @@ involves changing more nodes than maybe necessary.
                     leftCumSizes[numLeftItems - 1] = cumulativeSize + splitLeft.size();
                 }
 //                    debug("leftCumSizes=" + arrayString(leftCumSizes));
-                // Copy one less item if we are going to add the split one in a moment.
+                // Copy one less item if we are going to add the split
+                // one in a moment.
                 // I could have written:
                 //     haveLeft ? numLeftItems - 1
                 //              : numLeftItems
@@ -2200,12 +2332,14 @@ involves changing more nodes than maybe necessary.
             Node<T> subNode = nodes[subNodeIndex];
             int subNodeAdjustedIndex = subNodeAdjustedIndex(index, subNodeIndex);
 
-            // 1st choice: insert into the subNode if it has enough space enough to handle it
+            // 1st choice: insert into the subNode if it has enough
+            // space enough to handle it
             if (subNode.hasRelaxedCapacity(subNodeAdjustedIndex, oldFocus.length)) {
-                // Push the focus down to a lower-level node w. capacity.
+                // Push the focus down to a lower-level node
+                // w. capacity.
                 Node<T> newNode = subNode.pushFocus(subNodeAdjustedIndex, oldFocus);
-                // Make a copy of our nodesArray, replacing the old node at subNodeIndex with the
-                // new node
+                // Make a copy of our nodesArray, replacing the old
+                // node at subNodeIndex with the new node
                 return replaceInRelaxedAt(cumulativeSizes, nodes, newNode, subNodeIndex,
                                           oldFocus.length);
             }
@@ -2227,16 +2361,17 @@ involves changing more nodes than maybe necessary.
                 //  - the leaf doesn't have capacity
                 //  - We don't need to split ourselves
                 // Therefore:
-                //  - If the focus is big enough to be its own leaf and the index is on a leaf
-                //    boundary and , make it one.
-                //  - Else, insert into the array and replace one leaf with two.
-
+                //  - If the focus is big enough to be its own leaf
+                //    and the index is on a leaf boundary and , make
+                //    it one.
+                //  - Else, insert into the array and replace one leaf
+                //    with two.
                 final Node<T>[] newNodes;
                 final int[] newCumSizes;
                 final int numToSkip;
 
-                //  If the focus is big enough to be its own leaf and the index is on a leaf
-                // boundary, make it one.
+                // If the focus is big enough to be its own leaf and
+                // the index is on a leaf boundary, make it one.
                 if ( (oldFocus.length >= MIN_NODE_LENGTH) &&
                      (subNodeAdjustedIndex == 0 || subNodeAdjustedIndex == subNode.size()) ) {
 
@@ -2244,13 +2379,15 @@ involves changing more nodes than maybe necessary.
                     // Just add a new leaf
                     Leaf<T> newNode = new Leaf<>(oldFocus);
 
-                    // If we aren't inserting before the existing leaf node, we're inserting after.
+                    // If we aren't inserting before the existing leaf
+                    // node, we're inserting after.
                     if (subNodeAdjustedIndex != 0) {
                         subNodeIndex++;
                     }
 
                     newNodes = insertIntoArrayAt(newNode, nodes, subNodeIndex, Node.class);
-                    // Increment newCumSizes for the changed item and all items to the right.
+                    // Increment newCumSizes for the changed item and
+                    // all items to the right.
                     newCumSizes = new int[cumulativeSizes.length + 1];
                     int cumulativeSize = 0;
                     if (subNodeIndex > 0) {
@@ -2263,8 +2400,8 @@ involves changing more nodes than maybe necessary.
 //                        newCumSizes[i] = cumulativeSizes[i - 1] + oldFocus.length;
 //                    }
                 } else {
-                    // Grab the array from the existing leaf node, make the insert, and yield two
-                    // new leaf nodes.
+                    // Grab the array from the existing leaf node,
+                    // make the insert, and yield two new leaf nodes.
                     // Split-to-insert
                     Leaf<T>[] res =
                             ((Leaf<T>) subNode).spliceAndSplit(oldFocus, subNodeAdjustedIndex);
@@ -2273,7 +2410,8 @@ involves changing more nodes than maybe necessary.
 
                     newNodes = new Node[nodes.length + 1];
 
-                    // Increment newCumSizes for the changed item and all items to the right.
+                    // Increment newCumSizes for the changed item and
+                    // all items to the right.
                     newCumSizes = new int[cumulativeSizes.length + 1];
                     int leftSize = 0;
 
@@ -2315,8 +2453,9 @@ involves changing more nodes than maybe necessary.
                                           oldFocus.length);
             }
 
-            // Here we have capacity and the full sub-node is not a leaf or strict, so we have to
-            // split the appropriate sub-node.
+            // Here we have capacity and the full sub-node is not a
+            // leaf or strict, so we have to split the appropriate
+            // sub-node.
 
             // For now, split at half of size.
             Relaxed<T>[] newSubNode = ((Relaxed<T>) subNode).split();
@@ -2325,8 +2464,8 @@ involves changing more nodes than maybe necessary.
             Relaxed<T> node2 = newSubNode[1];
             Node<T>[] newNodes = genericNodeArray(nodes.length + 1);
 
-            // If we aren't inserting at the first item, array-copy the nodes before the insert
-            // point.
+            // If we aren't inserting at the first item, array-copy
+            // the nodes before the insert point.
             if (subNodeIndex > 0) {
                 System.arraycopy(nodes, 0, newNodes, 0, subNodeIndex);
             }
@@ -2335,8 +2474,8 @@ involves changing more nodes than maybe necessary.
             newNodes[subNodeIndex] = node1;
             newNodes[subNodeIndex + 1] = node2;
 
-            // If we aren't inserting at the last item, array-copy the nodes after the insert
-            // point.
+            // If we aren't inserting at the last item, array-copy the
+            // nodes after the insert point.
             if (subNodeIndex < nodes.length) {
                 System.arraycopy(nodes, subNodeIndex + 1, newNodes, subNodeIndex + 2,
                                  nodes.length - subNodeIndex - 1);
@@ -2350,7 +2489,8 @@ involves changing more nodes than maybe necessary.
             }
 
             for (int i = subNodeIndex; i < newCumSizes.length; i++) {
-                // TODO: Calculate instead of loading into memory.  See splitAt calculation above.
+                // TODO: Calculate instead of loading into memory.
+                // See splitAt calculation above.
                 cumulativeSize += newNodes[i].size();
                 newCumSizes[i] = cumulativeSize;
             }
@@ -2386,13 +2526,16 @@ involves changing more nodes than maybe necessary.
         @Override public String toString() { return indentedStr(0); }
 
         /**
-         This asks each node what size it is, then puts the cumulative sizes into a new array.
-         In theory, it might be faster to figure out what side we added/removed nodes and do
-         some addition/subtraction (in the amount of the added/removed nodes).  But I want to
-         optimize other things first and be sure everything is correct before experimenting with
-         that.  After all, it might not even be faster!
+         This asks each node what size it is, then puts the cumulative
+         sizes into a new array.  In theory, it might be faster to
+         figure out what side we added/removed nodes and do some
+         addition/subtraction (in the amount of the added/removed
+         nodes).  But I want to optimize other things first and be
+         sure everything is correct before experimenting with that.
+         After all, it might not even be faster!
          @param newNodes the nodes to take sizes from.
-         @return An array of cumulative sizes of each node in the passed array.
+         @return An array of cumulative sizes of each node in the
+                 passed array.
          */
         private static int[] makeSizeArray(Node[] newNodes) {
             int[] newCumSizes = new int[newNodes.length];
@@ -2406,20 +2549,24 @@ involves changing more nodes than maybe necessary.
 
         // TODO: Search for more opportunities to use this
         /**
-         Replace a node in a relaxed node by recalculating the cumulative sizes and copying
-         all sub nodes.
+         Replace a node in a relaxed node by recalculating the
+         cumulative sizes and copying all sub nodes.
          @param is original cumulative sizes
          @param ns original nodes
          @param newNode replacement node
-         @param subNodeIndex index to replace in this node's immediate children
-         @param insertSize the difference in size between the original node and the new node.
-         @return a new immutable Relaxed node with the immediate child node replaced.
+         @param subNodeIndex index to replace in this node's immediate
+                children
+         @param insertSize the difference in size between the original
+                node and the new node.
+         @return a new immutable Relaxed node with the immediate child
+                 node replaced.
          */
         static <T> Relaxed<T> replaceInRelaxedAt(int[] is, Node<T>[] ns, Node<T> newNode,
                                                  int subNodeIndex, int insertSize) {
             @SuppressWarnings("unchecked")
             Node<T>[] newNodes = replaceInArrayAt(newNode, ns, subNodeIndex, Node.class);
-            // Increment newCumSizes for the changed item and all items to the right.
+            // Increment newCumSizes for the changed item and all
+            // items to the right.
             int[] newCumSizes = new int[is.length];
             if (subNodeIndex > 0) {
                 System.arraycopy(is, 0, newCumSizes, 0, subNodeIndex);
@@ -2431,13 +2578,14 @@ involves changing more nodes than maybe necessary.
         }
 
         /**
-         Insert a node in a relaxed node by recalculating the cumulative sizes and copying
-         all sub nodes.
+         Insert a node in a relaxed node by recalculating the
+         cumulative sizes and copying all sub nodes.
          @param oldCumSizes original cumulative sizes
          @param ns original nodes
          @param newNode replacement node
          @param subNodeIndex index to insert in this node's immediate children
-         @return a new immutable Relaxed node with the immediate child node inserted.
+         @return a new immutable Relaxed node with the immediate child
+                 node inserted.
          */
         static <T> Relaxed<T> insertInRelaxedAt(int[] oldCumSizes, Node<T>[] ns, Node<T> newNode,
                                                 int subNodeIndex) {
@@ -2470,7 +2618,8 @@ involves changing more nodes than maybe necessary.
         }
 
         /**
-         Fixes up nodes on the right-hand side of the split.  Might want to explain this better...
+         Fixes up nodes on the right-hand side of the split.  Might
+         want to explain this better...
 
          @param origNodes the immediate children of the node we're splitting
          @param splitRight the pre-split right node
@@ -2491,10 +2640,13 @@ involves changing more nodes than maybe necessary.
                 right = new Relaxed<>(new int[] { splitRight.size() }, new Node[]{ splitRight });
             } else {
                 boolean haveRightSubNode = splitRight.size() > 0;
-                // If we have a rightSubNode, it's going to need a space in our new node array.
+                // If we have a rightSubNode, it's going to need a
+                // space in our new node array.
                 int numRightNodes = (origNodes.length - subNodeIndex) - (haveRightSubNode ? 0 : 1);
-                // Here the first (leftmost) node of the right-hand side was turned into the focus
-                // and we have additional right-hand origNodes to adjust the parent for.
+                // Here the first (leftmost) node of the right-hand
+                // side was turned into the focus and we have
+                // additional right-hand origNodes to adjust the
+                // parent for.
                 int[] rightCumSizes = new int[numRightNodes];
                 Node<T>[] rightNodes = genericNodeArray(numRightNodes);
 
@@ -2514,9 +2666,10 @@ involves changing more nodes than maybe necessary.
                     System.arraycopy(origNodes, subNodeIndex + 1, rightNodes, 0, numRightNodes);
                 }
 
-                // For relaxed nodes, we could calculate from previous cumulativeSizes instead of
-                // calling .size() on each one.  For strict, we could just add a strict amount.
-                // For now, this works.
+                // For relaxed nodes, we could calculate from previous
+                // cumulativeSizes instead of calling .size() on each
+                // one.  For strict, we could just add a strict
+                // amount.  For now, this works.
                 for (int i = destCopyStartIdx; i < numRightNodes; i++) {
                     cumulativeSize += rightNodes[i].size();
                     rightCumSizes[i] = cumulativeSize;
@@ -2529,9 +2682,10 @@ involves changing more nodes than maybe necessary.
         } // end fixRight()
     } // end class Relaxed
 
-    // =================================== Tree-walking Iterator ==================================
+    // ========================= Tree-walking Iterator ========================
 
-    /** Holds a node and the index of the child node we are currently iterating in. */
+    /** Holds a node and the index of the child node we are currently
+     * iterating in. */
     private static final class IdxNode<E> {
         int idx = 0;
         final Node<E> node;
@@ -2550,7 +2704,8 @@ involves changing more nodes than maybe necessary.
         private E[] leafArray = emptyArray();
         private int leafArrayIdx;
 
-        // Focus must be pre-pushed so we don't have to ever check the index.
+        // Focus must be pre-pushed so we don't have to ever check the
+        // index.
         @SuppressWarnings("unchecked")
         private Iter(Node<E> root) {
             stack = (IdxNode<E>[]) new IdxNode<?>[root.height()];
@@ -2570,7 +2725,8 @@ involves changing more nodes than maybe necessary.
         }
 
         private E[] nextLeafArray() {
-            // While nodes are used up, get next node from node one level up.
+            // While nodes are used up, get next node from node one
+            // level up.
             while ( (stackMaxIdx > -1) && !stack[stackMaxIdx].hasNext() ) {
                 stackMaxIdx--;
             }
@@ -2578,8 +2734,8 @@ involves changing more nodes than maybe necessary.
             if (stackMaxIdx < 0) {
                 return emptyArray();
             }
-            // If node one level up is used up, find a node that isn't used up and descend to its
-            // leftmost leaf.
+            // If node one level up is used up, find a node that isn't
+            // used up and descend to its leftmost leaf.
             return findLeaf(stack[stackMaxIdx].next());
         }
 
@@ -2597,12 +2753,13 @@ involves changing more nodes than maybe necessary.
                 leafArray = nextLeafArray();
                 leafArrayIdx = 0;
             }
-            // Return the next item in the leaf array and increment index
+            // Return the next item in the leaf array and increment
+            // index
             return leafArray[leafArrayIdx++];
         }
     }
 
-    // =================================== Array Helper Functions ==================================
+    // ========================= Array Helper Functions =======================
     // Helper function to avoid type warnings.
 
     @SuppressWarnings("unchecked")
@@ -2610,7 +2767,7 @@ involves changing more nodes than maybe necessary.
         return (Node<T>[]) new Node<?>[size];
     }
 
-    // =============================== Debugging and pretty-printing ===============================
+    // ==================== Debugging and pretty-printing =====================
 
     private static StringBuilder showSubNodes(StringBuilder sB, Object[] items, int nextIndent) {
         boolean isFirst = true;
