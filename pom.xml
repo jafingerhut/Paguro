@@ -141,25 +141,7 @@ http://mvnrepository.com/artifact/org.organicdesign/Paguro
 					</execution>
 				</executions>
 			</plugin>
-			<plugin>
-				<groupId>org.jacoco</groupId>
-				<artifactId>jacoco-maven-plugin</artifactId>
-				<version>0.7.5.201505241946</version>
-				<executions>
-					<execution>
-						<goals>
-							<goal>prepare-agent</goal>
-						</goals>
-					</execution>
-					<execution>
-						<id>report</id>
-						<phase>test</phase>
-						<goals>
-							<goal>report</goal>
-						</goals>
-					</execution>
-				</executions>
-			</plugin>
+                        <!-- org.jacoco/jacoco-maven-plugin deleted from here, since it was causing problems with JDK 11.  Perhaps a later version of jacoco would work with JDKs later than 8, but I will not experiment with that now. -->
 			<plugin>
 				<groupId>org.sonatype.plugins</groupId>
 				<artifactId>nexus-staging-maven-plugin</artifactId>
