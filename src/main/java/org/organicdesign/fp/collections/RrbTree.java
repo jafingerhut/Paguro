@@ -509,6 +509,8 @@ public abstract class RrbTree<E> implements BaseList<E>, Indented {
 
         @Override public int size() { return size; }
 
+	public int height() { return root.height(); }
+
         /**
          Divides this RRB-Tree such that every index less-than the
          given index ends up in the left-hand tree and the indexed
@@ -967,6 +969,8 @@ public abstract class RrbTree<E> implements BaseList<E>, Indented {
         public ImRrbt<E> without(int index) { return (ImRrbt<E>) super.without(index); }
 
         @Override public int size() { return size; }
+
+	public int height() { return root.height(); }
 
         /**
          Divides this RRB-Tree such that every index less-than the
